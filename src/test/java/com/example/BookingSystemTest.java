@@ -102,11 +102,13 @@ public class BookingSystemTest {
 
     /*
      * Test for BookingSystem#bookRoom(String, LocalDateTime, LocalDateTime)
-     * <p>
-     * - Valid parameters and room available
-     * <p>
-     * - Valid parameters and room unavailable
-     * <p>
+     *
+     * - Valid parameters and room available should book
+     *
+     * - Valid parameters and room available should book even if notification failed
+     *
+     * - Valid parameters and room unavailable shouldn't book
+     *
      * - Invalid parameters:
      *  - Null
      *  - Booking in the past
@@ -124,6 +126,22 @@ public class BookingSystemTest {
         assertThat(booking).isTrue();
 
         //Room should only be added once
+        verify(room).addBooking(any(Booking.class));
+        verify(roomRepository).save(room);
+    }
+
+    @Test
+    @DisplayName(("bookRoom: Should return true with valid parameters and available room even if notification failed"))
+    void tryBookingRoomAllGreenNotificationFail() throws NotificationException {
+        roomAvailable(true);
+
+        doThrow(new NotificationException("NotificationService is down"))
+                .when(notificationService).sendBookingConfirmation(any(Booking.class));
+
+        boolean result = bookingSystem.bookRoom(ROOM_ID, START, END);
+
+        assertThat(result).isTrue();
+
         verify(room).addBooking(any(Booking.class));
         verify(roomRepository).save(room);
     }
@@ -183,9 +201,9 @@ public class BookingSystemTest {
 
     /*
      * Test for BookingSystem#getAvailableRooms(LocalDateTime, LocalDateTime)
-     * <p>
+     *
      * - Valid parameters should return only available rooms
-     * <p>
+     *
      * - Invalid parameters:
      *  - Null
      *  - Start is after end
@@ -237,7 +255,7 @@ public class BookingSystemTest {
      * Test for BookingSystem#cancelBooking(String bookingId)
      * <p>
      * - Valid parameters should cancel existing booking
-     * - Valid parameters should cancel existing booking even if error is thrown
+     * - Valid parameters should cancel existing booking even if notification failed
      * <p>
      * - Invalid parameters:
      *  - Null
