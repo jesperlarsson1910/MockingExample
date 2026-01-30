@@ -11,11 +11,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -24,9 +27,9 @@ import static org.mockito.Mockito.*;
  * <p>
  * - {@link BookingSystem#bookRoom(String, LocalDateTime, LocalDateTime)}
  * <p>
- * - {@link BookingSystem#cancelBooking(String)}
- * <p>
  * - {@link BookingSystem#getAvailableRooms(LocalDateTime, LocalDateTime)}
+ * <p>
+ * - {@link BookingSystem#cancelBooking(String)}
  */
 
 @ExtendWith(MockitoExtension.class)
@@ -61,7 +64,7 @@ public class BookingSystemTest {
     //Simulate return values from required interfaces
     @BeforeEach
     public void setupInterfaces(TestInfo info){
-        if (info.getDisplayName().contains("null")){
+        if (info.getDisplayName().contains("null") || info.getDisplayName().contains("getAvailableRooms")) {
             return; //avoid unnecessary stubbing
         }
         when(timeProvider.getCurrentTime()).thenReturn(NOW);
@@ -81,6 +84,7 @@ public class BookingSystemTest {
                 Arguments.of(ROOM_ID, START, null),
                 Arguments.of(null, null, END),
                 Arguments.of(ROOM_ID, null, null),
+                Arguments.of(null, START, null),
                 Arguments.of(null, null, null)
         );
     }
@@ -94,9 +98,9 @@ public class BookingSystemTest {
         );
     }
 
-    /**
-     * Test for {@link BookingSystem#bookRoom(String, LocalDateTime, LocalDateTime)}
-     *<p>
+    /*
+     * Test for BookingSystem#bookRoom(String, LocalDateTime, LocalDateTime)
+     * <p>
      * - Valid parameters and room available
      * <p>
      * - Valid parameters and room unavailable
@@ -110,7 +114,7 @@ public class BookingSystemTest {
 
 
     @Test
-    @DisplayName("Should return true with valid parameters and available room")
+    @DisplayName("bookRoom: Should return true with valid parameters and available room")
     public void tryBookingRoomAllGreen(){
         roomAvailable(true);
 
@@ -123,7 +127,7 @@ public class BookingSystemTest {
     }
 
     @Test
-    @DisplayName("Should return false with valid parameters and unavailable room")
+    @DisplayName("bookRoom: Should return false with valid parameters and unavailable room")
     public void tryBookingRoomAllGreenNoRoom(){
         roomAvailable(false);
 
@@ -136,25 +140,16 @@ public class BookingSystemTest {
     }
 
     @ParameterizedTest
-    @DisplayName("Should throw exception when parameters are null (bookingRoom)")
+    @DisplayName("bookRoom: Should throw exception when parameters are null (bookingRoom)")
     @MethodSource("bookingRoomNullParameterProvider")
-    void nullParameters_bookRoom(String roomId, LocalDateTime start, LocalDateTime end) {
+    void nullParameters_tryBookingRoom(String roomId, LocalDateTime start, LocalDateTime end) {
         assertThatThrownBy(() -> bookingSystem.bookRoom(roomId, start, end))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Bokning kräver giltiga start- och sluttider samt rum-id");
     }
 
-    @ParameterizedTest
-    @DisplayName("Should Throw exception if any parameter is null getAvailableRooms")
-    @MethodSource("getAvailableRoomsNullParameterProvider")
-    void nullParameters_getAvailableRooms(LocalDateTime startTime, LocalDateTime endTime) {
-        assertThatThrownBy(() -> bookingSystem.getAvailableRooms(startTime, endTime))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Måste ange både start- och sluttid");
-    }
-
     @Test
-    @DisplayName("Should throw exception when booking is in the past")
+    @DisplayName("bookRoom: Should throw exception when booking is in the past")
     public void tryBookingInPast(){
         LocalDateTime past = NOW.minusDays(7);
 
@@ -164,7 +159,7 @@ public class BookingSystemTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when start is after end")
+    @DisplayName("bookRoom: Should throw exception when start is after end")
     void tryBookingAfterEnd() {
         LocalDateTime earlyEnd = START.minusDays(1);
 
@@ -174,12 +169,62 @@ public class BookingSystemTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when room doesn't exist")
+    @DisplayName("bookRoom: Should throw exception when room doesn't exist")
     void tryBookingNonExistentRoom(){
         when(roomRepository.findById(ROOM_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> bookingSystem.bookRoom(ROOM_ID, START, END))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Rummet existerar inte");
+    }
+
+    /*
+     * Test for BookingSystem#getAvailableRooms(LocalDateTime, LocalDateTime)
+     * <p>
+     * - Valid parameters should return only available rooms
+     * <p>
+     * - Invalid parameters:
+     *  - Null
+     *  - Start is after end
+     */
+
+    @Test
+    @DisplayName("getAvailableRooms: Should return available rooms with valid parameters")
+    void tryGettingAvailableRooms() {
+        Room roomAvail = mock(Room.class);
+        Room room2UnAvail = mock(Room.class);
+
+        when(roomAvail.isAvailable(START, END)).thenReturn(true);   //one available
+        when(room2UnAvail.isAvailable(START, END)).thenReturn(false);  //one unavailable
+
+        when(roomRepository.findAll()).thenReturn(Arrays.asList(roomAvail, room2UnAvail));
+
+        List<Room> availableRooms = bookingSystem.getAvailableRooms(START, END);
+
+        //should only return one room as the other one was unavailable
+        assertNotNull(availableRooms);
+        assertThat(availableRooms.size()).isEqualTo(1);
+
+        //ensure we only check once
+        verify(roomRepository).findAll();
+    }
+
+    @ParameterizedTest
+    @DisplayName("getAvailableRooms: Should Throw exception if any parameter is null")
+    @MethodSource("getAvailableRoomsNullParameterProvider")
+    void nullParameters_tryGettingAvailableRooms(LocalDateTime startTime, LocalDateTime endTime) {
+        assertThatThrownBy(() -> bookingSystem.getAvailableRooms(startTime, endTime))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Måste ange både start- och sluttid");
+    }
+
+    @Test
+    @DisplayName("getAvailableRooms: Should throw exception when start is after end")
+    void endTimeBeforeStart_getAvailableRooms() {
+        LocalDateTime earlyEnd = START.minusDays(1);
+
+        assertThatThrownBy(() -> bookingSystem.getAvailableRooms(START, earlyEnd))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Sluttid måste vara efter starttid");
     }
 }
