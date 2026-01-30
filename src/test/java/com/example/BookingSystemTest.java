@@ -55,8 +55,9 @@ public class BookingSystemTest {
     private static final LocalDateTime START = LocalDateTime.of(2026, 12, 22, 11, 0);
     private static final LocalDateTime END = LocalDateTime.of(2027, 1, 2, 14, 0);
 
-    //Default room ID
+    //Default room and booking ID
     private static final String ROOM_ID = "1001";
+    private static final String BOOKING_ID = "B1234";
 
 
 
@@ -97,6 +98,7 @@ public class BookingSystemTest {
                 Arguments.of(null, null)
         );
     }
+
 
     /*
      * Test for BookingSystem#bookRoom(String, LocalDateTime, LocalDateTime)
@@ -178,6 +180,7 @@ public class BookingSystemTest {
                 .hasMessageContaining("Rummet existerar inte");
     }
 
+
     /*
      * Test for BookingSystem#getAvailableRooms(LocalDateTime, LocalDateTime)
      * <p>
@@ -187,6 +190,7 @@ public class BookingSystemTest {
      *  - Null
      *  - Start is after end
      */
+
 
     @Test
     @DisplayName("getAvailableRooms: Should return available rooms with valid parameters")
@@ -226,5 +230,91 @@ public class BookingSystemTest {
         assertThatThrownBy(() -> bookingSystem.getAvailableRooms(START, earlyEnd))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Sluttid måste vara efter starttid");
+    }
+
+
+    /*
+     * Test for BookingSystem#cancelBooking(String bookingId)
+     * <p>
+     * - Valid parameters should cancel existing booking
+     * - Valid parameters should cancel existing booking even if error is thrown
+     * <p>
+     * - Invalid parameters:
+     *  - Null
+     *  - Booking has started
+     */
+
+    @Test
+    @DisplayName("cancelBooking: Should cancel existing booking with valid parameters")
+    void tryCancelBooking() throws NotificationException {
+        Booking booking = mock(Booking.class);
+        when(booking.getStartTime()).thenReturn(START);
+
+        Room room = mock(Room.class);
+        when(room.hasBooking(BOOKING_ID)).thenReturn(true);
+        when(room.getBooking(BOOKING_ID)).thenReturn(booking);
+        when(roomRepository.findAll()).thenReturn(List.of(room));
+
+        boolean cancel = bookingSystem.cancelBooking(BOOKING_ID);
+
+        //ensure booking has been "cancelled"
+        assertThat(cancel).isTrue();
+
+        //ensure booking was only removed once
+        verify(room).removeBooking(BOOKING_ID);
+        verify(roomRepository).save(room);
+    }
+
+    @Test
+    @DisplayName("cancelBooking: Should cancel existing booking with valid parameters even if error is thrown")
+    void cancelBookingEvenIfErrorIsThrown() throws NotificationException {
+        Booking booking = mock(Booking.class);
+        when(booking.getStartTime()).thenReturn(START);
+
+        Room room = mock(Room.class);
+        when(room.hasBooking(BOOKING_ID)).thenReturn(true);
+        when(room.getBooking(BOOKING_ID)).thenReturn(booking);
+        when(roomRepository.findAll()).thenReturn(List.of(room));
+
+        doThrow(new NotificationException("NotificationService is down"))
+                .when(notificationService).sendCancellationConfirmation(booking);
+
+        boolean cancel = bookingSystem.cancelBooking(BOOKING_ID);
+
+        //ensure booking has been "cancelled"
+        assertThat(cancel).isTrue();
+
+        //ensure booking was still removed
+        verify(room).removeBooking(BOOKING_ID);
+        verify(roomRepository).save(room);
+    }
+
+    @Test
+    @DisplayName("cancelBooking: Should throw exception when parameter is null")
+    void nullParameters_tryCancelBooking() {
+        assertThatThrownBy(() -> bookingSystem.cancelBooking(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Boknings-id kan inte vara null");
+
+        verify(roomRepository, never()).save(room);
+    }
+
+    @Test
+    @DisplayName("cancelBooking: Should throw exception when booking has started")
+    void lateCancellation() {
+        LocalDateTime pastStart = NOW.minusDays(1);
+
+        Booking booking = mock(Booking.class);
+        when(booking.getStartTime()).thenReturn(pastStart);
+
+        Room room = mock(Room.class);
+        when(room.hasBooking(BOOKING_ID)).thenReturn(true);
+        when(room.getBooking(BOOKING_ID)).thenReturn(booking);
+
+        when(roomRepository.findAll()).thenReturn(List.of(room));
+
+        assertThatThrownBy(() -> bookingSystem.cancelBooking(BOOKING_ID))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Kan inte avboka påbörjad eller avslutad bokning");
     }
 }
