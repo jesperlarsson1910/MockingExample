@@ -1,23 +1,64 @@
 package com.example.payment;
 
-public class PaymentProcessor {
-    private static final String API_KEY = "sk_test_123456";
+import com.example.NotificationException;
 
-    public boolean processPayment(double amount) {
+import java.time.LocalDateTime;
+
+public class PaymentProcessor {
+
+    private final String API_KEY;
+    private final PaymentApi paymentApi;
+    private final PaymentRepo paymentRepo;
+    private final EmailService emailService;
+
+    public PaymentProcessor(String API_KEY, PaymentApi paymentApi, PaymentRepo paymentRepo, EmailService emailService) {
+        this.API_KEY = API_KEY;
+        this.paymentApi = paymentApi;
+        this.paymentRepo = paymentRepo;
+        this.emailService = emailService;
+    }
+
+    public PaymentStatus processPayment(bookingOrder order, double amount, String email) throws PaymentException {
+
+        if(amount <= 0) {
+            throw new PaymentException("Amount must be greater than 0.");
+        }
+        if(order.getRemainingBalance() <= 0){
+            throw new PaymentException("Order has no outstanding balance");
+        }
+        if(amount > order.getRemainingBalance()) {
+            throw new PaymentException("Amount is greater than outstanding balance.");
+        }
+
+
         // Anropar extern betaltjänst direkt med statisk API-nyckel
-        PaymentApiResponse response = PaymentApi.charge(API_KEY, amount);
+        PaymentApiResponse response;
+
+        try{
+            response = paymentApi.charge(API_KEY, amount);
+        }
+        catch(PaymentException e){
+            paymentRepo.failedPayment(order.getBooking(), amount);
+            throw new PaymentException("External service failure", e);
+        }
+
 
         // Skriver till databas direkt
-        if (response.isSuccess()) {
-            DatabaseConnection.getInstance()
-                    .executeUpdate("INSERT INTO payments (amount, status) VALUES (" + amount + ", 'SUCCESS')");
+        paymentRepo.addPayment(order.getBooking(), amount, response);
+
+        if (response.status().equals(PaymentStatus.FAIL)) {
+            throw new PaymentException("Payment failed");
         }
+
 
         // Skickar e-post direkt
-        if (response.isSuccess()) {
-            EmailService.sendPaymentConfirmation("user@example.com", amount);
+        try {
+
+            emailService.sendPaymentConfirmation(email, order.getBooking(), amount, response.status());
+        } catch (NotificationException e) {
+            // Continue if confirmation fails
         }
 
-        return response.isSuccess();
+        return response.status();
     }
 }

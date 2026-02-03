@@ -1,4 +1,10 @@
 package com.example.payment;
 
-public record PaymentApiResponse() {
+import java.time.LocalDateTime;
+
+public record PaymentApiResponse(
+        String paymentID,
+        PaymentStatus status,
+        LocalDateTime Timestamp) {
+
 }
