@@ -1,6 +1,6 @@
 package com.example.payment;
 
-enum PaymentStatus {
+public enum PaymentStatus {
     PENDING,
     SUCCESS,
     FAIL

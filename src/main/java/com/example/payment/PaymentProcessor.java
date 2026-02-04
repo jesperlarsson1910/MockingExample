@@ -30,14 +30,17 @@ public class PaymentProcessor {
         if(order == null){
             throw new IllegalArgumentException("Order cannot be null");
         }
+        if(amount == null){
+            throw new IllegalArgumentException("Amount cannot be null");
+        }
         if(amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new PaymentException("Amount must be greater than 0.");
         }
         if(order.getRemainingCost().compareTo(BigDecimal.ZERO) <= 0){
             throw new PaymentException("Order has no outstanding balance");
         }
-        if(amount.compareTo(order.getRemainingCost()) >= 0) {
-            throw new PaymentException("Amount is greater than outstanding balance.");
+        if(amount.compareTo(order.getRemainingCost()) > 0) {
+            throw new PaymentException("Amount exceeds outstanding balance.");
         }
 
         //If no preferred email is provided the one connected to the booking is used
