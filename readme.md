@@ -1,8 +1,7 @@
 ## PaymentProcessor Refactoring Decisions
 
 ### API_KEY
-Instead of having the key hardcoded and visible in the code we provide it as a parameter when creating an instance. Having sensitive data stored in the code is not a good idea and having it be provided means it can be changed as needed.
-
+Instead of having the key hardcoded and visible in the code we provide a config object that contains the key and could contain other information to expand the PaymentProcessor. Also makes for easier testing. 
 
 ### PaymentApi & PaymentApiResponse
 Made response codes enum rather than a string, given that it can only be one of three options it lowers risk of errors.

@@ -6,13 +6,26 @@ import java.math.BigDecimal;
 
 public class PaymentProcessor {
 
-    private final String API_KEY;
+    private final PaymentConfig paymentConfig;
     private final PaymentApi paymentApi;
     private final PaymentRepo paymentRepo;
     private final EmailService emailService;
 
-    public PaymentProcessor(String API_KEY, PaymentApi paymentApi, PaymentRepo paymentRepo, EmailService emailService) {
-        this.API_KEY = API_KEY;
+    public PaymentProcessor(PaymentConfig paymentConfig, PaymentApi paymentApi, PaymentRepo paymentRepo, EmailService emailService) {
+        if (paymentConfig == null) {
+            throw new IllegalArgumentException("API_KEY cannot be null or empty");
+            }
+        if (paymentApi == null) {
+            throw new IllegalArgumentException("paymentApi cannot be null");
+            }
+        if (paymentRepo == null) {
+            throw new IllegalArgumentException("paymentRepo cannot be null");
+            }
+        if (emailService == null) {
+            throw new IllegalArgumentException("emailService cannot be null");
+        }
+
+        this.paymentConfig = paymentConfig;
         this.paymentApi = paymentApi;
         this.paymentRepo = paymentRepo;
         this.emailService = emailService;
@@ -57,7 +70,7 @@ public class PaymentProcessor {
         PaymentApiResponse response;
 
         try{
-            response = paymentApi.charge(API_KEY, amount);
+            response = paymentApi.charge(paymentConfig.getApiKey(), amount);
         }
         catch(PaymentException e){
             //Error thrown if something went wrong with the external API, e.g. connection error
