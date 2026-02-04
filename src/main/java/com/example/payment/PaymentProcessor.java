@@ -13,7 +13,7 @@ public class PaymentProcessor {
 
     public PaymentProcessor(PaymentConfig paymentConfig, PaymentApi paymentApi, PaymentRepo paymentRepo, EmailService emailService) {
         if (paymentConfig == null) {
-            throw new IllegalArgumentException("API_KEY cannot be null or empty");
+            throw new IllegalArgumentException("PaymentConfig cannot be null");
             }
         if (paymentApi == null) {
             throw new IllegalArgumentException("paymentApi cannot be null");
@@ -40,6 +40,9 @@ public class PaymentProcessor {
      * @throws PaymentException
      */
     public PaymentStatus processPayment(Billable order, BigDecimal amount, String email) throws PaymentException {
+        if (paymentConfig.getApiKey() == null) {
+            throw new PaymentException("ApiKey is null");
+        }
         if(order == null){
             throw new IllegalArgumentException("Order cannot be null");
         }
@@ -72,7 +75,7 @@ public class PaymentProcessor {
         try{
             response = paymentApi.charge(paymentConfig.getApiKey(), amount);
         }
-        catch(PaymentException e){
+        catch(ExternalServiceException e){
             //Error thrown if something went wrong with the external API, e.g. connection error
             //Still keep track of attempt to ensure complete history and possibly try again
             paymentRepo.failedPayment(order, amount);
