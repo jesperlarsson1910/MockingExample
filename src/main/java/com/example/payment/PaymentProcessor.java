@@ -30,6 +30,10 @@ public class PaymentProcessor {
         if(order == null){
             throw new IllegalArgumentException("Order cannot be null");
         }
+        if(order.getEmail() == null || order.getEmail().isEmpty() || order.getID() == null || order.getID().isEmpty()
+            || order.getPrice() == null || order.getRemainingCost() == null){
+            throw new IllegalArgumentException("Order cannot contain null or empty values");
+        }
         if(amount == null){
             throw new IllegalArgumentException("Amount cannot be null");
         }
