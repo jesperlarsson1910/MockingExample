@@ -1,8 +1,9 @@
 package com.example.payment;
 
-import com.example.Booking;
 import com.example.NotificationException;
 
+import java.math.BigDecimal;
+
 public interface EmailService {
-    void sendPaymentConfirmation(String email, Booking booking,  double amount, PaymentStatus status) throws NotificationException;
+    void sendPaymentConfirmation(String email, Billable order, BigDecimal amount, PaymentStatus status) throws NotificationException;
 }

@@ -2,7 +2,7 @@ package com.example.payment;
 
 import com.example.NotificationException;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 public class PaymentProcessor {
 
@@ -18,47 +18,66 @@ public class PaymentProcessor {
         this.emailService = emailService;
     }
 
-    public PaymentStatus processPayment(bookingOrder order, double amount, String email) throws PaymentException {
-
-        if(amount <= 0) {
+    /**
+     *
+     * @param order Object tied to the booking that should contain the price
+     * @param amount Value to be paid
+     * @param email Preferred email for receipt if different from order email
+     * @return Status of the payment {@link PaymentStatus#SUCCESS} {@link PaymentStatus#PENDING} {@link PaymentStatus#FAIL}
+     * @throws PaymentException
+     */
+    public PaymentStatus processPayment(Billable order, BigDecimal amount, String email) throws PaymentException {
+        if(order == null){
+            throw new IllegalArgumentException("Order cannot be null");
+        }
+        if(amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new PaymentException("Amount must be greater than 0.");
         }
-        if(order.getRemainingBalance() <= 0){
+        if(order.getRemainingCost().compareTo(BigDecimal.ZERO) <= 0){
             throw new PaymentException("Order has no outstanding balance");
         }
-        if(amount > order.getRemainingBalance()) {
+        if(amount.compareTo(order.getRemainingCost()) >= 0) {
             throw new PaymentException("Amount is greater than outstanding balance.");
         }
 
+        //If no preferred email is provided the one connected to the booking is used
+        if(email == null || email.isEmpty()) {
+            email = order.getEmail();
+        }
 
-        // Anropar extern betaltjänst direkt med statisk API-nyckel
+
+        // Call external API to handle charge
         PaymentApiResponse response;
 
         try{
             response = paymentApi.charge(API_KEY, amount);
         }
         catch(PaymentException e){
-            paymentRepo.failedPayment(order.getBooking(), amount);
+            //Error thrown if something went wrong with the external API, e.g. connection error
+            //Still keep track of attempt to ensure complete history and possibly try again
+            paymentRepo.failedPayment(order, amount);
             throw new PaymentException("External service failure", e);
         }
 
 
-        // Skriver till databas direkt
-        paymentRepo.addPayment(order.getBooking(), amount, response);
+        //Write to db using repo as long as error wasn't thrown from external API
+        paymentRepo.logPayment(order, amount, response);
 
+
+        //If the payment failed due to reasons like not enough money. Still logged but error thrown to indicate issue
         if (response.status().equals(PaymentStatus.FAIL)) {
             throw new PaymentException("Payment failed");
         }
 
 
-        // Skickar e-post direkt
+        //Send email if payment is success or pending
         try {
-
-            emailService.sendPaymentConfirmation(email, order.getBooking(), amount, response.status());
+            emailService.sendPaymentConfirmation(email, order, amount, response.status());
         } catch (NotificationException e) {
             // Continue if confirmation fails
         }
 
+        //Should be success most time but can be pending indicating that we should check status again later
         return response.status();
     }
 }

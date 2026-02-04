@@ -1,26 +1,25 @@
 package com.example.payment;
 
-import com.example.Booking;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
 public interface PaymentRepo {
 
     record PaymentInstance(
-            Booking booking,
-            double amount,
+            Billable order,
+            BigDecimal amount,
             PaymentApiResponse response,
             LocalDateTime timestamp
     ){};
 
-    void addPayment(Booking booking, double amount, PaymentApiResponse response);
+    void logPayment(Billable order, BigDecimal amount, PaymentApiResponse response);
 
-    void failedPayment(Booking booking, double amount);
+    void failedPayment(Billable order, BigDecimal amount);
 
-    Set<PaymentInstance> getPayments(String bookingID);
+    Set<PaymentInstance> getPayments(String orderID);
 
-    Set<PaymentInstance> getPayments(Booking booking);
+    Set<PaymentInstance> getPayments(Billable order);
 
     PaymentInstance getPayment(String paymentID);
 }
