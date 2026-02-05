@@ -40,8 +40,8 @@ public class PaymentProcessor {
      * @throws PaymentException
      */
     public PaymentStatus processPayment(Billable order, BigDecimal amount, String email) throws PaymentException {
-        if (paymentConfig.getApiKey() == null) {
-            throw new IllegalArgumentException("ApiKey is null");
+        if (paymentConfig.getApiKey() == null || paymentConfig.getApiKey().isBlank()) {
+            throw new IllegalArgumentException("ApiKey is null or blank");
         }
         if(order == null){
             throw new IllegalArgumentException("Order cannot be null");

@@ -226,17 +226,16 @@ public class PaymentProcessorTest {
     @Test
     @DisplayName("Null or empty return from interfaces should throw exception")
     void tryProcessPaymentNullEmptyReturnFromInterface(){
-        when(paymentConfig.getApiKey()).thenReturn(null, API_KEY);
+        when(paymentConfig.getApiKey()).thenReturn(null, "", "", API_KEY);
         //Should throw exception if api key is null
-        assertThatThrownBy(() -> paymentProcessor.processPayment(order, AMOUNT, ""))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("ApiKey is null");
-
-
-        when(order.getEmail()).thenReturn(null, "", "",EMAIL);
-
+        for (int i = 0; i < 2; i++) {
+            assertThatThrownBy(() -> paymentProcessor.processPayment(order, AMOUNT, ""))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("ApiKey is null or blank");
+        }
 
         //Should throw exceptions any critical data in order is missing
+        when(order.getEmail()).thenReturn(null, "", "",EMAIL);
         for (int i = 0; i < 2; i++) {
             assertThatThrownBy(() -> paymentProcessor.processPayment(order, AMOUNT, ""))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -244,7 +243,6 @@ public class PaymentProcessorTest {
         }
 
         when(order.getID()).thenReturn(null,"", "", ORDER_ID);
-
         for (int i = 0; i < 2; i++) {
             assertThatThrownBy(() -> paymentProcessor.processPayment(order, AMOUNT, ""))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -253,7 +251,6 @@ public class PaymentProcessorTest {
 
         when(order.getPrice()).thenReturn(null,AMOUNT);
         when(order.getRemainingCost()).thenReturn(null,PRICE);
-
         for (int i = 0; i < 2; i++) {
             assertThatThrownBy(() -> paymentProcessor.processPayment(order, AMOUNT, ""))
                     .isInstanceOf(IllegalArgumentException.class)
