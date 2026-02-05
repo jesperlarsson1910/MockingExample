@@ -41,12 +41,14 @@ public class PaymentProcessor {
      */
     public PaymentStatus processPayment(Billable order, BigDecimal amount, String email) throws PaymentException {
         if (paymentConfig.getApiKey() == null) {
-            throw new PaymentException("ApiKey is null");
+            throw new IllegalArgumentException("ApiKey is null");
         }
         if(order == null){
             throw new IllegalArgumentException("Order cannot be null");
         }
-        if(order.getEmail() == null || order.getEmail().isEmpty() || order.getID() == null || order.getID().isEmpty()
+
+
+        if(order.getEmail() == null || order.getEmail().isBlank() || order.getID() == null || order.getID().isBlank()
             || order.getPrice() == null || order.getRemainingCost() == null){
             throw new IllegalArgumentException("Order cannot contain null or empty values");
         }
@@ -54,17 +56,18 @@ public class PaymentProcessor {
             throw new IllegalArgumentException("Amount cannot be null");
         }
         if(amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new PaymentException("Amount must be greater than 0.");
+            throw new PaymentException("Amount must be greater than 0");
         }
-        if(order.getRemainingCost().compareTo(BigDecimal.ZERO) <= 0){
+        BigDecimal remainingAmount = order.getRemainingCost();
+        if(remainingAmount.compareTo(BigDecimal.ZERO) <= 0){
             throw new PaymentException("Order has no outstanding balance");
         }
-        if(amount.compareTo(order.getRemainingCost()) > 0) {
-            throw new PaymentException("Amount exceeds outstanding balance.");
+        if(amount.compareTo(remainingAmount) > 0) {
+            throw new PaymentException("Amount exceeds outstanding balance");
         }
 
         //If no preferred email is provided the one connected to the booking is used
-        if(email == null || email.isEmpty()) {
+        if(email == null || email.isBlank()) {
             email = order.getEmail();
         }
 

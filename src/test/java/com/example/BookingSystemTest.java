@@ -45,8 +45,6 @@ public class BookingSystemTest {
     @Mock
     private TimeProvider timeProvider;
 
-
-
     @InjectMocks
     private BookingSystem bookingSystem;
 
@@ -71,7 +69,7 @@ public class BookingSystemTest {
         when(timeProvider.getCurrentTime()).thenReturn(NOW);
     }
 
-    //Simulate room being available so both behaviours can be tested
+    //Simulate room availability so both behaviours can be tested
     public void roomAvailable(boolean available){
         when(roomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
         when(room.isAvailable(START,END)).thenReturn(available);
