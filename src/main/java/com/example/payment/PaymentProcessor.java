@@ -48,9 +48,14 @@ public class PaymentProcessor {
         }
 
 
-        if(order.getEmail() == null || order.getEmail().isBlank() || order.getID() == null || order.getID().isBlank()
-            || order.getPrice() == null || order.getRemainingCost() == null){
-            throw new IllegalArgumentException("Order cannot contain null or empty values");
+        if(order.getEmail() == null || order.getEmail().isBlank()){
+            throw new IllegalArgumentException("Order email is null or blank");
+        }
+        if(order.getID() == null || order.getID().isBlank()){
+            throw new IllegalArgumentException("Order ID is null or blank");
+        }
+        if(order.getPrice() == null || order.getRemainingCost() == null){
+            throw new IllegalArgumentException("Price or remaining cost is null");
         }
         if(amount == null){
             throw new IllegalArgumentException("Amount cannot be null");

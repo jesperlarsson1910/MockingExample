@@ -66,7 +66,7 @@ public class PaymentProcessorTest {
         when(order.getEmail()).thenReturn(EMAIL);
         when(order.getPrice()).thenReturn(PRICE);
         if(info.getDisplayName().contains("Currency")){
-            return;
+            return; //avoid unnecessary stubbing
         }
         when(order.getRemainingCost()).thenReturn(AMOUNT);
     }
@@ -76,6 +76,7 @@ public class PaymentProcessorTest {
         return new PaymentApiResponse(ORDER_ID, status, TIMESTAMP);
     }
 
+    //Provide combos of null parameters
     private static Stream<Arguments> processPaymentNullParameterProvider() {
         return Stream.of(
                 Arguments.of(null, AMOUNT),
@@ -94,6 +95,8 @@ public class PaymentProcessorTest {
      * - Valid parameters and no outages should be process, saved and email sent to preferred adress
      *
      * - Valid parameters with external outage should throw exception but still be saved
+     *
+     * - Valid parameters with paiment failure should save and then throw exception
      *
      * - Valid parameters with EmailService outage should still return payment status
      *
@@ -137,7 +140,7 @@ public class PaymentProcessorTest {
 
     @Test
     @DisplayName("Failed payments should throw an error but still be logged")
-    public void tryProcessPaymentFailed() throws ExternalServiceException {
+    public void tryProcessPaymentFailed() throws ExternalServiceException, NotificationException {
         PaymentApiResponse response = createPaymentApiResponse(PaymentStatus.FAIL);
         when(paymentApi.charge(paymentConfig.getApiKey(), AMOUNT)).thenReturn(response);
 
@@ -147,6 +150,8 @@ public class PaymentProcessorTest {
 
         //make sure that transaction was saved
         verify(paymentRepo).logPayment(order, AMOUNT, response);
+        //should not send email on failed transaction
+        verify(emailService, never()).sendPaymentConfirmation(any(), any(), any(), any());
     }
 
     @Test
@@ -157,7 +162,9 @@ public class PaymentProcessorTest {
 
         paymentProcessor.processPayment(order, AMOUNT, ALT_EMAIL);
 
+        //ensure mail was sent to alt email rather than order email
         verify(emailService).sendPaymentConfirmation(ALT_EMAIL, order, AMOUNT, PaymentStatus.SUCCESS);
+        verify(emailService, never()).sendPaymentConfirmation(EMAIL, order, AMOUNT, PaymentStatus.SUCCESS);
     }
 
     @Test
@@ -226,17 +233,31 @@ public class PaymentProcessorTest {
                 .hasMessageContaining("ApiKey is null");
 
 
-        when(order.getEmail()).thenReturn(null).thenReturn("").thenReturn(EMAIL);
-        when(order.getID()).thenReturn(null).thenReturn("").thenReturn(ORDER_ID);
+        when(order.getEmail()).thenReturn(null, "", "",EMAIL);
 
-        when(order.getPrice()).thenReturn(null).thenReturn(AMOUNT);
-        when(order.getRemainingCost()).thenReturn(null).thenReturn(PRICE);
 
         //Should throw exceptions any critical data in order is missing
-        for (int i = 0; i < 6; i++) { //TODO Figure out why not all loops work
+        for (int i = 0; i < 2; i++) {
             assertThatThrownBy(() -> paymentProcessor.processPayment(order, AMOUNT, ""))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Order cannot contain null or empty values");
+                    .hasMessageContaining("Order email is null or blank");
+        }
+
+        when(order.getID()).thenReturn(null,"", "", ORDER_ID);
+
+        for (int i = 0; i < 2; i++) {
+            assertThatThrownBy(() -> paymentProcessor.processPayment(order, AMOUNT, ""))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Order ID is null or blank");
+        }
+
+        when(order.getPrice()).thenReturn(null,AMOUNT);
+        when(order.getRemainingCost()).thenReturn(null,PRICE);
+
+        for (int i = 0; i < 2; i++) {
+            assertThatThrownBy(() -> paymentProcessor.processPayment(order, AMOUNT, ""))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Price or remaining cost is null");
         }
 
     }
