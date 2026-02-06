@@ -3,7 +3,7 @@ package com.example.shop;
 import java.math.BigDecimal;
 
 public class Item {
-    BigDecimal price;
+    private BigDecimal price;
 
     public Item (BigDecimal price) {
         this.price = price;
@@ -11,5 +11,9 @@ public class Item {
 
     public BigDecimal getPrice() {
         return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 }

@@ -14,18 +14,25 @@ public class ShoppingCartTest {
 
     ShoppingCart shoppingCart;
 
+    Item item1;
+    Item item2;
+    Item item3;
+    Item item4;
+    Item item5;
+
     @BeforeEach
     public void beforeEach() {
         shoppingCart = new ShoppingCart();
+
+        item1  = new Item(BigDecimal.valueOf(101));
+        item2  = new Item(BigDecimal.valueOf(102));
+        item3  = new Item(BigDecimal.valueOf(103));
+        item4  = new Item(BigDecimal.valueOf(104));
+        item5  = new Item(BigDecimal.valueOf(105));
     }
 
     @Test
     public void addItems() {
-        Item item1  = new Item(BigDecimal.valueOf(101));
-        Item item2  = new Item(BigDecimal.valueOf(102));
-        Item item3  = new Item(BigDecimal.valueOf(103));
-        Item item4  = new Item(BigDecimal.valueOf(104));
-        Item item5  = new Item(BigDecimal.valueOf(105));
         shoppingCart.add(item1);
         shoppingCart.add(List.of(item2, item3));
         shoppingCart.add(item4, item5);
@@ -35,11 +42,6 @@ public class ShoppingCartTest {
 
     @Test
     public void removeItems() {
-        Item item1  = new Item(BigDecimal.valueOf(101));
-        Item item2  = new Item(BigDecimal.valueOf(102));
-        Item item3  = new Item(BigDecimal.valueOf(103));
-        Item item4  = new Item(BigDecimal.valueOf(104));
-        Item item5  = new Item(BigDecimal.valueOf(105));
         shoppingCart.add(item1, item2, item3, item4, item5);
 
         shoppingCart.remove(item1);
@@ -54,13 +56,61 @@ public class ShoppingCartTest {
 
     @Test
     public void calculateTotalPrice() {
-        Item item1  = new Item(BigDecimal.valueOf(101));
-        Item item2  = new Item(BigDecimal.valueOf(102));
-        Item item3  = new Item(BigDecimal.valueOf(103));
-        Item item4  = new Item(BigDecimal.valueOf(104));
-        Item item5  = new Item(BigDecimal.valueOf(105));
         shoppingCart.add(item1, item2, item3, item4, item5);
 
-        assertThat(shoppingCart.getTotalPrice().compareTo(BigDecimal.valueOf(101+102+103+104+105))).isZero();
+        assertThat(shoppingCart.getTotalPrice()
+                .compareTo(BigDecimal.valueOf(101+102+103+104+105)))
+                .isZero();
+    }
+
+    @Test
+    public void applyDiscountPercentageToEntireShoppingCart() {
+        shoppingCart.add(item1, item2, item3, item4, item5);
+        shoppingCart.applyDiscountPercentage(BigDecimal.valueOf(0.1));
+
+        assertThat(shoppingCart.getTotalPrice()
+                .compareTo(BigDecimal.valueOf(101+102+103+104+105).multiply(BigDecimal.valueOf(0.1))))
+                .isZero();
+    }
+
+    @Test
+    public void applyDiscountPercentageToItem() {
+        shoppingCart.add(item1, item2, item3, item4, item5);
+        shoppingCart.applyDiscountPercentage(item1, BigDecimal.valueOf(0.1));
+
+        assertThat(shoppingCart.getTotalPrice()
+                .compareTo((BigDecimal.valueOf(101).multiply(BigDecimal.valueOf(0.1))
+                        .add(BigDecimal.valueOf(102+103+104+105)))))
+                .isZero();
+    }
+
+    @Test
+    public void applyDiscountAmountToShoppingCart() {
+        shoppingCart.add(item1, item2, item3, item4, item5);
+        shoppingCart.applyDiscountAmount(BigDecimal.valueOf(10));
+
+        assertThat(shoppingCart.getTotalPrice()
+                .compareTo(BigDecimal.valueOf(101+102+103+104+105).subtract(BigDecimal.valueOf(10*5))))
+                .isZero();
+    }
+
+    @Test
+    public void applyDiscountAmountToItem() {
+        shoppingCart.add(item1, item2, item3, item4, item5);
+        shoppingCart.applyDiscountAmount(item1, BigDecimal.valueOf(10));
+
+        assertThat(shoppingCart.getTotalPrice()
+                .compareTo(BigDecimal.valueOf(101+102+103+104+105).subtract(BigDecimal.valueOf(10))))
+                .isZero();
+    }
+
+    @Test
+    public void applyCoupon() {
+        shoppingCart.add(item1, item2, item3, item4, item5);
+        shoppingCart.applyCoupon(BigDecimal.valueOf(200));
+
+        assertThat(shoppingCart.getTotalPrice()
+                .compareTo(BigDecimal.valueOf(101+102+103+104+105).subtract(BigDecimal.valueOf(200))))
+                .isZero();
     }
 }
