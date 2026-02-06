@@ -1,27 +1,43 @@
 package com.example.shop;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class ShoppingCart {
-    List<Item> items = new ArrayList<>();
+    Map<Item, Integer> items = new HashMap<>();
     List<BigDecimal> coupons = new ArrayList<>();
 
     public void add(Item item) {
-        items.add(item);
+        if (items.containsKey(item)) {
+            items.put(item, items.get(item) + 1);
+        }
+        else {
+            items.put(item, 1);
+        };
+    }
+    public void add(Item item, int quantity) {
+        if (items.containsKey(item)) {
+            items.put(item, items.get(item) + quantity);
+        }
+        else {
+            items.put(item, quantity);
+        };
     }
 
+
     public void add(Collection<Item> items) {
-        this.items.addAll(items);
+        for (Item item : items) {
+            this.add(item);
+        };
     }
 
     public void add(Item... items) {
-        this.items.addAll(List.of(items));
+        for (Item item : items) {
+            this.add(item);
+        };
     }
 
-    public List<Item> getCart() {
+    public Map<Item, Integer> getCart() {
         return items;
     }
 
@@ -30,7 +46,13 @@ public class ShoppingCart {
     }
 
     public void remove(Item... items) {
-        this.items.removeAll(List.of(items));
+        for (Item item : items) {
+            this.remove(item);
+        };
+    }
+
+    public void remove(Item item, int quantity) {
+        items.put(item, items.get(item) - quantity);
     }
 
     public void empty() {
@@ -38,23 +60,27 @@ public class ShoppingCart {
     }
 
     public BigDecimal getTotalPrice() {
-        return items.stream().map(Item::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add).subtract(getTotalCoupon());
+        return items.entrySet().stream()
+                .map(entry -> entry.getKey().getPrice()
+                        .multiply(BigDecimal.valueOf(entry.getValue())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .subtract(getTotalCoupon());
     }
 
     public void applyDiscountPercentage(BigDecimal discount) {
-        items.forEach(item -> {item.setPrice(item.getPrice().multiply(discount));});
+        items.keySet().forEach(i -> i.setPrice(i.getPrice().multiply(discount)));
     }
 
     public void applyDiscountPercentage(Item item, BigDecimal discount) {
-        items.stream().filter(i -> i.equals(item)).findFirst().ifPresent(i -> {item.setPrice(item.getPrice().multiply(discount));});
+        items.keySet().stream().filter(i -> i.equals(item)).forEach(i -> i.setPrice(i.getPrice().multiply(discount)));
     }
 
     public void applyDiscountAmount(BigDecimal discount) {
-        items.forEach(item -> {item.setPrice(item.getPrice().subtract(discount));});
+        items.keySet().forEach(item -> item.setPrice(item.getPrice().subtract(discount)));
     }
 
     public void applyDiscountAmount(Item item, BigDecimal discount) {
-        items.stream().filter(i -> i.equals(item)).findFirst().ifPresent(i -> {item.setPrice(item.getPrice().subtract(discount));});
+        items.keySet().stream().filter(i -> i.equals(item)).forEach(i -> i.setPrice(i.getPrice().subtract(discount)));
     }
 
     public void applyCoupon(BigDecimal amount) {
