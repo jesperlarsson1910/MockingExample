@@ -22,4 +22,16 @@ public class ShoppingCart {
     public List<Item> getCart() {
         return items;
     }
+
+    public void remove(Item item) {
+        items.remove(item);
+    }
+
+    public void remove(Item... items) {
+        this.items.removeAll(List.of(items));
+    }
+
+    public void empty() {
+        items.clear();
+    }
 }
