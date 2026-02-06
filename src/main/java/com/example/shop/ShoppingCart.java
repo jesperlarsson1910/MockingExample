@@ -1,5 +1,6 @@
 package com.example.shop;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -33,5 +34,9 @@ public class ShoppingCart {
 
     public void empty() {
         items.clear();
+    }
+
+    public BigDecimal getTotalPrice() {
+        return items.stream().map(Item::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
