@@ -8,6 +8,11 @@ public class ShoppingCart {
     List<BigDecimal> coupons = new ArrayList<>();
 
     public void add(Item item) {
+        if(item == null) throw new IllegalArgumentException("item is null");
+        if(item.getName() == null || item.getName().isBlank() || item.getPrice() == null){
+            throw new IllegalArgumentException("item contains null or blank");
+        }
+
         if (items.containsKey(item)) {
             items.put(item, items.get(item) + 1);
         }
@@ -16,6 +21,11 @@ public class ShoppingCart {
         };
     }
     public void add(Item item, int quantity) {
+        if(item == null) throw new IllegalArgumentException("item is null");
+        if(item.getName() == null || item.getName().isBlank() || item.getPrice() == null){
+            throw new IllegalArgumentException("item contains null or blank");
+        }
+
         if (items.containsKey(item)) {
             items.put(item, items.get(item) + quantity);
         }
@@ -25,13 +35,25 @@ public class ShoppingCart {
     }
 
 
-    public void add(Collection<Item> items) {
+    public void add(List<Item> items) {
+        if(items == null) throw new IllegalArgumentException("items is null");
+        if(items.contains(null)) throw new IllegalArgumentException("items contains null value");
+        if(items.stream().anyMatch(item -> item.getName() == null || item.getName().isBlank() || item.getPrice() == null)){
+            throw new IllegalArgumentException("item contains null or blank");
+        }
+
         for (Item item : items) {
             this.add(item);
         };
     }
 
     public void add(Item... items) {
+        if(items == null) throw new IllegalArgumentException("items is null");
+        if(Arrays.stream(items).toList().contains(null)) throw new IllegalArgumentException("items contains null value");
+        if(Arrays.stream(items).anyMatch(item -> item.getName() == null || item.getName().isBlank() || item.getPrice() == null)){
+            throw new IllegalArgumentException("item contains null or blank");
+        }
+
         for (Item item : items) {
             this.add(item);
         };
@@ -42,17 +64,29 @@ public class ShoppingCart {
     }
 
     public void remove(Item item) {
+        if(item == null) throw new IllegalArgumentException("item is null");
+
         items.remove(item);
     }
 
     public void remove(Item... items) {
+        if(items == null) throw new IllegalArgumentException("items is null");
+        if(Arrays.stream(items).toList().contains(null)) throw new IllegalArgumentException("items contains null value");
+
         for (Item item : items) {
             this.remove(item);
         };
     }
 
     public void remove(Item item, int quantity) {
-        items.put(item, items.get(item) - quantity);
+        if(item == null) throw new IllegalArgumentException("item is null");
+
+        if(items.get(item) < quantity) {
+            remove(item);
+        }
+        else {
+            items.put(item, items.get(item) - quantity);
+        }
     }
 
     public void empty() {
@@ -68,22 +102,34 @@ public class ShoppingCart {
     }
 
     public void applyDiscountPercentage(BigDecimal discount) {
+        if(discount == null) throw new IllegalArgumentException("discount is null");
+
         items.keySet().forEach(i -> i.setPrice(i.getPrice().multiply(discount)));
     }
 
     public void applyDiscountPercentage(Item item, BigDecimal discount) {
+        if(item == null) throw new IllegalArgumentException("item is null");
+        if(discount == null) throw new IllegalArgumentException("discount is null");
+
         items.keySet().stream().filter(i -> i.equals(item)).forEach(i -> i.setPrice(i.getPrice().multiply(discount)));
     }
 
     public void applyDiscountAmount(BigDecimal discount) {
+        if(discount == null) throw new IllegalArgumentException("discount is null");
+
         items.keySet().forEach(item -> item.setPrice(item.getPrice().subtract(discount)));
     }
 
     public void applyDiscountAmount(Item item, BigDecimal discount) {
+        if(item == null) throw new IllegalArgumentException("item is null");
+        if(discount == null) throw new IllegalArgumentException("discount is null");
+
         items.keySet().stream().filter(i -> i.equals(item)).forEach(i -> i.setPrice(i.getPrice().subtract(discount)));
     }
 
     public void applyCoupon(BigDecimal amount) {
+        if(amount == null) throw new IllegalArgumentException("amount is null");
+
         coupons.add(amount);
     }
 
