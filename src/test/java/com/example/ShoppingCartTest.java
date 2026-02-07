@@ -111,7 +111,7 @@ public class ShoppingCartTest {
 
         assertThat(shoppingCart.getTotalPrice()
                 .compareTo(BigDecimal.valueOf(101+102+103+104+105+106)
-                        .multiply(BigDecimal.valueOf(0.1))))
+                        .multiply(BigDecimal.valueOf(0.9))))
                 .isZero();
     }
 
@@ -121,7 +121,7 @@ public class ShoppingCartTest {
         shoppingCart.applyDiscountPercentage(item1, BigDecimal.valueOf(10));
 
         assertThat(shoppingCart.getTotalPrice()
-                .compareTo((BigDecimal.valueOf(101).multiply(BigDecimal.valueOf(0.1))
+                .compareTo((BigDecimal.valueOf(101).multiply(BigDecimal.valueOf(0.9))
                         .add(BigDecimal.valueOf(102+103+104+105+106)))))
                 .isZero();
     }
@@ -172,6 +172,17 @@ public class ShoppingCartTest {
                 .containsEntry(item4, 1)
                 .containsEntry(item5, 1)
                 .containsEntry(item6, 1);
+    }
+
+    @Test
+    public void addZeroOrNegativeAmountThrowsException() {
+        assertThatThrownBy(() -> shoppingCart.add(item1, 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("quantity must be greater than 0");
+
+        assertThatThrownBy(() -> shoppingCart.add(item1, -1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("quantity must be greater than 0");
     }
 
     @Test

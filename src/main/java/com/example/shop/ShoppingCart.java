@@ -22,6 +22,7 @@ public class ShoppingCart {
     }
     public void add(Item item, int quantity) {
         if(item == null) throw new IllegalArgumentException("item is null");
+        if(quantity <= 0) throw new IllegalArgumentException("quantity must be greater than 0");
         if(item.getName() == null || item.getName().isBlank() || item.getPrice() == null){
             throw new IllegalArgumentException("item contains null or blank");
         }
@@ -93,7 +94,7 @@ public class ShoppingCart {
 
         quantity = Math.abs(quantity);
         if (items.containsKey(item)) {
-            if(items.get(item) < quantity) {
+            if(items.get(item) <= quantity) {
                 remove(item);
             }
             else {
@@ -130,7 +131,9 @@ public class ShoppingCart {
             throw new IllegalArgumentException("discount must be greater than 0 but not above 100%");
         }
 
-        items.keySet().forEach(i -> i.setPrice(i.getPrice().multiply(discount.multiply(BigDecimal.valueOf(0.01)))));
+        items.keySet().forEach(i -> i.setPrice(
+                i.getPrice().multiply(BigDecimal.valueOf(100).subtract(discount)
+                        .multiply(BigDecimal.valueOf(0.01)))));
     }
 
     public boolean applyDiscountPercentage(Item item, BigDecimal discount) {
@@ -145,7 +148,9 @@ public class ShoppingCart {
             return false;
         }
         else {
-            items.keySet().stream().filter(i -> i.equals(item)).forEach(i -> i.setPrice(i.getPrice().multiply(discount.multiply(BigDecimal.valueOf(0.01)))));
+            items.keySet().stream().filter(i -> i.equals(item)).forEach(i -> i.setPrice(
+                    i.getPrice().multiply(BigDecimal.valueOf(100).subtract(discount)
+                            .multiply(BigDecimal.valueOf(0.01)))));
             return true;
         }
     }
@@ -167,7 +172,7 @@ public class ShoppingCart {
         if(discount.compareTo(BigDecimal.valueOf(0)) <= 0) throw new IllegalArgumentException("discount must be greater than 0");
 
         if (!items.containsKey(item)) {
-            System.out.println("item" + item.getName() + "is not in cart");
+            System.out.println("\"" + item.getName() + "\" is not in cart");
             return false;
         }
         else {

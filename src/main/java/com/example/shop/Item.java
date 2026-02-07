@@ -25,7 +25,7 @@ public class Item {
         this.price = price;
     }
 
-    `@Override`
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -33,7 +33,7 @@ public class Item {
         return Objects.equals(itemName, item.itemName);
     }
 
-    `@Override`
+    @Override
     public int hashCode() {
         return Objects.hash(itemName);
     }
