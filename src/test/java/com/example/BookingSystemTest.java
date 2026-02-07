@@ -45,8 +45,6 @@ public class BookingSystemTest {
     @Mock
     private TimeProvider timeProvider;
 
-
-
     @InjectMocks
     private BookingSystem bookingSystem;
 
@@ -71,7 +69,7 @@ public class BookingSystemTest {
         when(timeProvider.getCurrentTime()).thenReturn(NOW);
     }
 
-    //Simulate room being available so both behaviours can be tested
+    //Simulate room availability so both behaviours can be tested
     public void roomAvailable(boolean available){
         when(roomRepository.findById(ROOM_ID)).thenReturn(Optional.of(room));
         when(room.isAvailable(START,END)).thenReturn(available);
@@ -125,7 +123,7 @@ public class BookingSystemTest {
         Boolean booking = bookingSystem.bookRoom(ROOM_ID, START, END); //Valid booking
         assertThat(booking).isTrue();
 
-        //Room should only be added once
+        //Ensure correct methods are used appropriately
         verify(room).addBooking(any(Booking.class));
         verify(roomRepository).save(room);
     }
@@ -142,6 +140,7 @@ public class BookingSystemTest {
 
         assertThat(result).isTrue();
 
+        //Ensure correct methods are used appropriately
         verify(room).addBooking(any(Booking.class));
         verify(roomRepository).save(room);
     }
@@ -227,7 +226,7 @@ public class BookingSystemTest {
         assertNotNull(availableRooms);
         assertThat(availableRooms.size()).isEqualTo(1);
 
-        //ensure we only check once
+        //Ensure correct method is used appropriately
         verify(roomRepository).findAll();
     }
 
@@ -253,10 +252,10 @@ public class BookingSystemTest {
 
     /*
      * Test for BookingSystem#cancelBooking(String bookingId)
-     * <p>
+     *
      * - Valid parameters should cancel existing booking
      * - Valid parameters should cancel existing booking even if notification failed
-     * <p>
+     *
      * - Invalid parameters:
      *  - Null
      *  - Booking has started
@@ -278,7 +277,7 @@ public class BookingSystemTest {
         //ensure booking has been "cancelled"
         assertThat(cancel).isTrue();
 
-        //ensure booking was only removed once
+        //Ensure correct methods are used appropriately
         verify(room).removeBooking(BOOKING_ID);
         verify(roomRepository).save(room);
     }
@@ -314,6 +313,7 @@ public class BookingSystemTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Boknings-id kan inte vara null");
 
+        //ensure room is not saved
         verify(roomRepository, never()).save(room);
     }
 
