@@ -69,7 +69,7 @@ public class ShoppingCartTest {
         shoppingCart.add(item1, item2, item2, item3, item4, item5, item6);
 
 
-        shoppingCart.remove(item1);
+        assertThat(shoppingCart.remove(item1)).isTrue();
         assertThat(shoppingCart.getCart())
                 .containsEntry(item2, 2)
                 .containsEntry(item3, 1)
@@ -77,14 +77,14 @@ public class ShoppingCartTest {
                 .containsEntry(item5, 1)
                 .containsEntry(item6, 1);
 
-        shoppingCart.remove(item2, 2);
+        assertThat(shoppingCart.remove(item2, 2)).isTrue();
         assertThat(shoppingCart.getCart())
                 .containsEntry(item3, 1)
                 .containsEntry(item4, 1)
                 .containsEntry(item5, 1)
                 .containsEntry(item6, 1);
 
-        shoppingCart.remove(item3, item4);
+        assertThat(shoppingCart.remove(item3, item4)).isTrue();
         assertThat(shoppingCart.getCart())
                 .containsEntry(item5, 1)
                 .containsEntry(item6, 1);
@@ -107,7 +107,7 @@ public class ShoppingCartTest {
     @Test
     public void applyDiscountPercentageToEntireShoppingCart() {
         shoppingCart.add(item1, item2, item3, item4, item5, item6);
-        shoppingCart.applyDiscountPercentage(BigDecimal.valueOf(0.1));
+        shoppingCart.applyDiscountPercentage(BigDecimal.valueOf(10));
 
         assertThat(shoppingCart.getTotalPrice()
                 .compareTo(BigDecimal.valueOf(101+102+103+104+105+106)
@@ -118,7 +118,7 @@ public class ShoppingCartTest {
     @Test
     public void applyDiscountPercentageToItem() {
         shoppingCart.add(item1, item2, item3, item4, item5, item6);
-        shoppingCart.applyDiscountPercentage(item1, BigDecimal.valueOf(0.1));
+        shoppingCart.applyDiscountPercentage(item1, BigDecimal.valueOf(10));
 
         assertThat(shoppingCart.getTotalPrice()
                 .compareTo((BigDecimal.valueOf(101).multiply(BigDecimal.valueOf(0.1))
@@ -212,7 +212,9 @@ public class ShoppingCartTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("item contains null or blank");
 
-        List<Item> itemsWithNullOrBlank = new ArrayList<>(List.of(item1, item));
+        List<Item> itemsWithNullOrBlank = new ArrayList<>();
+        itemsWithNullOrBlank.add(item1);
+        itemsWithNullOrBlank.add(item);
 
         assertThatThrownBy(() -> shoppingCart.add(itemsWithNullOrBlank))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -241,5 +243,66 @@ public class ShoppingCartTest {
         assertThatThrownBy(() -> shoppingCart.remove(null, 1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("item is null");
+    }
+
+    @Test
+    public void cannotRemoveItemsNotInCart() {
+        assertThat(shoppingCart.remove(item1)).isFalse();
+        assertThat(shoppingCart.remove(item2, item3)).isFalse();
+        assertThat(shoppingCart.remove(item4, 4)).isFalse();
+    }
+
+    @Test
+    public void cannotDiscountItemsNotInCart() {
+        assertThat(shoppingCart.applyDiscountPercentage(item1, BigDecimal.TEN)).isFalse();
+        assertThat(shoppingCart.applyDiscountAmount(item2, BigDecimal.TEN)).isFalse();
+    }
+
+    @Test
+    public void discountLessThan0MoreThan100PercentThrowsException() {
+        shoppingCart.add(item1);
+
+        assertThatThrownBy(() -> shoppingCart.applyDiscountPercentage(BigDecimal.valueOf(101)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("discount must be greater than 0 but not above 100%");
+
+        assertThatThrownBy(() -> shoppingCart.applyDiscountPercentage(BigDecimal.valueOf(-101)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("discount must be greater than 0 but not above 100%");
+
+        assertThatThrownBy(() -> shoppingCart.applyDiscountPercentage(item1, BigDecimal.valueOf(101)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("discount must be greater than 0 but not above 100%");
+
+        assertThatThrownBy(() -> shoppingCart.applyDiscountPercentage(item1, BigDecimal.valueOf(-101)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("discount must be greater than 0 but not above 100%");
+    }
+
+    @Test
+    public void negativeDiscountAmountThrowsException() {
+        shoppingCart.add(item1);
+
+        assertThatThrownBy(() -> shoppingCart.applyDiscountAmount(BigDecimal.valueOf(-1)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("discount must be greater than 0");
+
+        assertThatThrownBy(() -> shoppingCart.applyDiscountAmount(item1, BigDecimal.valueOf(-1)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("discount must be greater than 0");
+    }
+
+    @Test
+    public void itemAndCartCannotHaveNegativePrice(){
+        shoppingCart.add(item1, item2, item3, item4, item5, item6);
+
+        shoppingCart.applyDiscountAmount(item1, item1.getPrice().add(BigDecimal.valueOf(1)));
+        assertThat(item1.getPrice().compareTo(BigDecimal.ZERO) == 0).isTrue();
+
+        shoppingCart.applyDiscountAmount(shoppingCart.getTotalPrice().add(BigDecimal.valueOf(1)));
+        assertThat(shoppingCart.getTotalPrice().compareTo(BigDecimal.ZERO) == 0).isTrue();
+
+        shoppingCart.applyCoupon(shoppingCart.getTotalPrice().add(BigDecimal.valueOf(1000)));
+        assertThat(shoppingCart.getTotalPrice().compareTo(BigDecimal.ZERO) == 0).isTrue();
     }
 }
