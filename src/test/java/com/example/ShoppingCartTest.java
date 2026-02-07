@@ -306,14 +306,25 @@ public class ShoppingCartTest {
     @Test
     public void itemAndCartCannotHaveNegativePrice(){
         shoppingCart.add(item1, item2, item3, item4, item5, item6);
+        Item item1FromCart = shoppingCart.getCart().keySet().stream().filter(i -> i.equals(item1)).findFirst().get();
 
         shoppingCart.applyDiscountAmount(item1, item1.getPrice().add(BigDecimal.valueOf(1)));
-        assertThat(item1.getPrice().compareTo(BigDecimal.ZERO) == 0).isTrue();
+        assertThat(item1FromCart.getPrice().compareTo(BigDecimal.ZERO) == 0).isTrue();
 
         shoppingCart.applyDiscountAmount(shoppingCart.getTotalPrice().add(BigDecimal.valueOf(1)));
         assertThat(shoppingCart.getTotalPrice().compareTo(BigDecimal.ZERO) == 0).isTrue();
 
         shoppingCart.applyCoupon(shoppingCart.getTotalPrice().add(BigDecimal.valueOf(1000)));
         assertThat(shoppingCart.getTotalPrice().compareTo(BigDecimal.ZERO) == 0).isTrue();
+    }
+
+    @Test
+    public void itemDiscountShouldBeCartSpecific(){
+        ShoppingCart altShoppingCart = new ShoppingCart();
+        shoppingCart.add(item1, item2, item3, item4, item5, item6);
+        altShoppingCart.add(item1, item2, item3, item4, item5, item6);
+
+        shoppingCart.applyDiscountAmount(item1, BigDecimal.TEN);
+        assertThat(shoppingCart.getTotalPrice().compareTo(altShoppingCart.getTotalPrice()) == 0).isFalse();
     }
 }

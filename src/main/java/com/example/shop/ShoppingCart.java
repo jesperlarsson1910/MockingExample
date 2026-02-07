@@ -17,7 +17,7 @@ public class ShoppingCart {
             items.put(item, items.get(item) + 1);
         }
         else {
-            items.put(item, 1);
+            items.put(new Item(item.getName(), item.getPrice()), 1);
         };
     }
     public void add(Item item, int quantity) {
@@ -31,7 +31,7 @@ public class ShoppingCart {
             items.put(item, items.get(item) + quantity);
         }
         else {
-            items.put(item, quantity);
+            items.put(new Item(item.getName(), item.getPrice()), quantity);
         };
     }
 
