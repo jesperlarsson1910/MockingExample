@@ -43,7 +43,7 @@ public class ShoppingCartTest {
         return Stream.of(
                 Arguments.of(new Item(null, BigDecimal.valueOf(404))),
                 Arguments.of(new Item("", BigDecimal.valueOf(404))),
-                Arguments.of(new Item(null, BigDecimal.valueOf(404)))
+                Arguments.of(new Item("Apple", null))
         );
     }
 
